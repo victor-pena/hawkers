@@ -1,1 +1,259 @@
+Breed[hawker hw]
+breed[costumers cts]
+breed [proveedores prov ]
+hawker-own[ level_profits cooperation win autoorganization ]
+costumers-own[satisfaction autoorganization]
+patches-own[new-profits profits  ]
 
+proveedores-own[engage autoorganization ]
+
+directed-link-breed [blue-links blue-link]
+globals
+[
+    ;; node from where we started exploring the giant component
+ capital_social
+new-habitability habitability  ; change to globals, to perform behavior space
+]
+to setup ;to establish framework and agents
+  ca
+  reset-ticks
+  setup-hawker
+  setup-patches
+  setup-proveedores
+  setup-costumers
+end
+
+to setup-patches
+   ask patches [ set profits random 4; 4 tipos de ganancias(0=0-20/1=21-40/2=41-60/3=61-80/4=81-100 np float solo enteros
+                recolor ]
+ end
+
+to setup-proveedores
+  create-proveedores initial-proveedo
+  ask proveedores [set shape "person"
+    set color white
+    set engage false
+    setxy random-pxcor random-pycor
+    set size 0.5 ]
+  end
+
+
+to setup-costumers
+  create-costumers initial-costumers
+  ask costumers [set shape "person"
+    set color gray
+    set satisfaction false
+    setxy random-pxcor random-pycor
+    set size 0.5 ]
+  end
+
+to setup-hawker
+
+  create-hawker initial-seller  [ immigrate setxy random-pxcor random-pycor ]
+
+  ask hawker
+  [
+    set level_profits random 100
+    if level_profits  > 0 and  level_profits <= 20 [set color yellow ] ; [set color green]
+    if level_profits  > 20 and level_profits  <= 40 [set color green] ;[set color red] ; I want to identify which is seller with deside high profits
+    if level_profits  > 40 and level_profits  <= 60 [set color blue] ;[set color blue]
+    if level_profits  > 60 and level_profits <= 80 [set color red]  ;[set color pink]
+    if level_profits  > 80 and level_profits <= 100[set color pink] ];[set color yellow]
+
+  ask hawker [set win 0
+    set cooperation random 100.0
+    set cooperation 0
+
+    set autoorganization false
+    set size 1.0
+    set capital_social random 100.0
+    set capital_social 0]
+end
+
+to immigrate ;hawker procedure por que
+  set shape "person"
+  set heading random 4 * 90
+end
+
+to recolor  ;; patch procedure
+  set pcolor 10.9 * profits
+  set pcolor 10.9 * habitability
+end
+
+to recolor2  ; patch procedure
+  set pcolor 1 * new-profits
+  set pcolor 1.9 * new-habitability
+end
+to go
+
+  if (count hawker with [autoorganization = true] > (initial-seller * 0.75 )) [stop]
+
+  ask hawker [search]
+  ask hawker [win-process]
+
+
+  ask patches [ set new-profits (( profits + sum [profits] of neighbors) / 4) ^ alpha ] ;feedback
+
+  ask patches [ set profits new-profits]
+  let scaling-factor max [profits] of patches
+  ask patches [ set profits profits / scaling-factor ]
+  ;ask patches [ recolor ]
+
+  ask patches[set habitability ((hab + sum [hab] of neighbors) / 4 ^ teta)
+    ]
+
+
+  let scaling-factor2 max [habitability] of patches
+  ask patches [ set habitability habitability / scaling-factor ]
+  ;ask patches [ recolor2 ]
+
+  ask hawker [decided]
+  ask hawker [autoorg]
+  improve
+
+  ask hawker [set capital_social capital_social + 0.43
+  network]
+
+  tick
+end
+
+to-report hab ;;; sliders para Ect...
+ report ( ((Ect * beta + calle * ganma + ccc * lambda + Pct * delta)/ 4)); los deslizadores sirven para establecer la importancia de cada factor en la corrida
+
+end
+
+to search        ;; hawker procedure, this is to move hawker
+ repeat attempts[
+ wander
+ move-in
+ organization
+
+
+ ]
+end
+
+to wander        ;; hawker procedure
+  rt random 2 * 90
+  lt random 2 * 90
+  fd 1
+end
+
+to move-in; hawker procedure
+
+    ask one-of hawker ;;;
+      [
+            set level_profits level_profits + ((random-float 1) / 100 - (random-float 1) / 100) ;;;;; para incrementar ingresos
+
+            if level_profits  <= 20 [set color yellow ] ; [set color green]
+            if level_profits  > 21 and level_profits  <= 40 [set color green] ;[set color red] ; I want to identify which is seller with deside high profits
+            if level_profits  > 41 and level_profits  <= 60 [set color blue] ;[set color blue]
+            if level_profits  > 61 and level_profits <= 80 [set color red]  ;[set color pink]
+            if level_profits  > 81 and level_profits <= 100 [set color pink] ;[set color yellow]
+          ]
+end
+to win-process; this procedure is to set win, win = 5 is to hawker who get to 5
+  ask one-of hawker
+  [
+    ifelse level_profits > random 100 [set win 5]
+    [set win 0]
+  ]
+
+end
+
+to organization; hawker procedure, cooperation increases
+  ask one-of hawker [
+    set cooperation cooperation + 0.05
+    if cooperation  > 81 and cooperation <= 100 [set autoorganization true]
+  ]
+end
+
+to decided; this code is to establish on patches with new-hab and new-profits high
+organization
+ask one-of hawker [ifelse win = 5
+  [move-to max-one-of patches [new-profits]][
+  move-to min-one-of patches [new-profits]]
+  search
+  organization]
+end
+
+to autoorg; this code is to autoorganization conected with cooperation
+decided
+ask hawker [ if win = 5 and autoorganization = false
+  [move-to max-one-of patches [habitability]
+    organization
+    habitab
+    ask  hawker [if win = 5 and autoorganization = true
+      [move-to max-one-of patches [new-habitability]
+        set pcolor yellow]]]]
+end
+
+to improve
+;ask hawker with [autoorganization = true] [if new-habitability > 3 [move-to max-one-of patches [new-profits]stop]]
+autoorg
+ask hawker [if win = 0 [move-in
+    win-process
+    ask hawker [ifelse autoorganization = false [decided]
+    [autoorg]
+       ]]]
+ ask hawker ;; 10/11 improve relacionado con autoorganizacion y reflejado en el espacio de interaccion
+  [
+   ifelse autoorganization = true
+    [ set pcolor yellow - 3 ]
+    [ifelse (autoorganization = false)
+      [ set pcolor lime ]
+      [ set pcolor yellow - 1 ]
+  ]
+  ]
+end
+
+
+to habitab
+
+  ask hawker ;; 10/11 improve relacionado con autoorganizacion y reflejado en el espacio de interaccion
+  [move-in
+   ifelse (cooperation > 80 and win = 5)
+    [ set new-habitability habitability + 1.5
+      ]
+    [ifelse (cooperation <= 20 and win = 5)
+      [ set new-habitability habitability - 0.5  ]
+      [ set new-habitability habitability  + 0.5]
+
+  ]
+  ]
+end
+
+to add-edge
+
+  let node1 hawker with [autoorganization = true];autoorganization con relacion al capital social y habitabilidad, relacionar estos dos ultimos
+  let node2 proveedores with [engage = true]
+  let node3 costumers with [satisfaction = true]
+  ask node1
+  [create-blue-links-to node2
+    create-blue-links-to node3 ]
+end
+
+to network
+  if cpsocial
+      [
+      ask proveedores[
+      ifelse autoorganization = true and win = 5
+       [set engage engage = true
+        set capital_social capital_social + 1.5
+        set new-habitability habitability  + 0.1]
+        [set engage engage = false
+        set capital_social capital_social - 0.005
+        set new-habitability habitability - 0.1]
+        ask proveedores [add-edge]
+        ]
+      ask costumers
+      [ifelse autoorganization = true and win = 5
+        [set satisfaction satisfaction = true
+          set capital_social capital_social + 1.5
+          set new-habitability habitability  + 0.1]
+          [set satisfaction satisfaction = false
+          set capital_social capital_social - 0.005
+          set new-habitability habitability - 0.1]
+          ask costumers [add-edge]
+         ]]
+
+end
