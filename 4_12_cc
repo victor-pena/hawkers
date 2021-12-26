@@ -1,7 +1,7 @@
 Breed[hawker hw]
 breed[costumers cts]
 breed [proveedores prov ]
-hawker-own[ level_profits cooperation win autoorganization ]
+hawker-own[ level_profits cooperation win autoorganization A-state B-state C-state D-state E-state]
 costumers-own[satisfaction autoorganization]
 patches-own[new-profits profits  ]
 
@@ -60,9 +60,20 @@ to setup-hawker
     if level_profits  > 60 and level_profits <= 80 [set color red]  ;[set color pink]
     if level_profits  > 80 and level_profits <= 100[set color pink] ];[set color yellow]
 
+   ;;;states para la correlacion en el behaviorspace
+
+  ask hawker
+  [
+    set A-state count turtles with [color = yellow]
+    set B-state count turtles with [color = green]
+    set C-state count turtles with [color = blue]
+    set D-state count turtles with [color = red]
+    set E-state count turtles with [color = pink]
+  ]
+
   ask hawker [set win 0
     set cooperation random 100.0
-    set cooperation 0
+   ; set cooperation 0 ;supuesto: la cooperacion esta distribuida aleatoriamente entre los ambulantes, sigue una distribucion normal
 
     set autoorganization false
     set size 1.0
@@ -86,7 +97,7 @@ to recolor2  ; patch procedure
 end
 to go
 
-  if (count hawker with [autoorganization = true] > (initial-seller * 0.75 )) [stop]
+  if (count hawker with [autoorganization = true] > (initial-seller * 0.95 )) [stop]
 
   ask hawker [search]
   ask hawker [win-process]
@@ -124,7 +135,7 @@ end
 
 to search        ;; hawker procedure, this is to move hawker
  repeat attempts[
- wander
+; wander
  move-in
  organization
 
@@ -132,17 +143,19 @@ to search        ;; hawker procedure, this is to move hawker
  ]
 end
 
-to wander        ;; hawker procedure
-  rt random 2 * 90
-  lt random 2 * 90
-  fd 1
-end
+;to wander        ;; hawker procedure a move-in
+;  rt random 2 * 90
+ ; lt random 2 * 90
+  ;fd 1
+;end
 
 to move-in; hawker procedure
-
+ rt random 2 * 90
+  lt random 2 * 90
+  fd 1
     ask one-of hawker ;;;
       [
-            set level_profits level_profits + ((random-float 1) / 100 - (random-float 1) / 100) ;;;;; para incrementar ingresos
+            set level_profits level_profits + ((random-float 1) / 100 - (random-float 1) / 1000) ;;;;; para incrementar ingresos, asumiendo que hay incremento a lo largo del tiempo
 
             if level_profits  <= 20 [set color yellow ] ; [set color green]
             if level_profits  > 21 and level_profits  <= 40 [set color green] ;[set color red] ; I want to identify which is seller with deside high profits
@@ -150,7 +163,19 @@ to move-in; hawker procedure
             if level_profits  > 61 and level_profits <= 80 [set color red]  ;[set color pink]
             if level_profits  > 81 and level_profits <= 100 [set color pink] ;[set color yellow]
           ]
+
+  ;;; states para actualizar
+     ask hawker
+  [
+    set A-state count turtles with [color = yellow]
+    set B-state count turtles with [color = green]
+    set C-state count turtles with [color = blue]
+    set D-state count turtles with [color = red]
+    set E-state count turtles with [color = pink] ;;cuando llega a este estado significa que se formaliza en una tienda
+  ]
+
 end
+
 to win-process; this procedure is to set win, win = 5 is to hawker who get to 5
   ask one-of hawker
   [
@@ -160,10 +185,13 @@ to win-process; this procedure is to set win, win = 5 is to hawker who get to 5
 
 end
 
-to organization; hawker procedure, cooperation increases
+to organization ; hawker procedure, cooperation increases ;; relacionar con pinks, asumiendo que la cooperacion se relaciona con ingresos, ver teoria que apoye esto
   ask one-of hawker [
-    set cooperation cooperation + 0.05
-    if cooperation  > 81 and cooperation <= 100 [set autoorganization true]
+    if level_profits  > 81
+    [set cooperation cooperation + 0.05]
+
+    if cooperation  > 81 and cooperation <= 100
+    [set autoorganization true]
   ]
 end
 
@@ -172,16 +200,17 @@ organization
 ask one-of hawker [ifelse win = 5
   [move-to max-one-of patches [new-profits]][
   move-to min-one-of patches [new-profits]]
-  search
-  organization]
+  search ; no opera
+  organization; no opera
+  ]
 end
 
 to autoorg; this code is to autoorganization conected with cooperation
 decided
 ask hawker [ if win = 5 and autoorganization = false
   [move-to max-one-of patches [habitability]
-    organization
-    habitab
+    organization ; no opera
+    habitab; no opera
     ask  hawker [if win = 5 and autoorganization = true
       [move-to max-one-of patches [new-habitability]
         set pcolor yellow]]]]
