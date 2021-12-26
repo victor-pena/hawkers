@@ -1,7 +1,7 @@
 Breed[hawker hw]
 breed[costumers cts]
 breed [proveedores prov ]
-hawker-own[ level_profits cooperation win autoorganization A-state B-state C-state D-state E-state]
+hawker-own[ level_profits cooperation win autoorganization ]
 costumers-own[satisfaction autoorganization]
 patches-own[new-profits profits  ]
 
@@ -13,6 +13,7 @@ globals
     ;; node from where we started exploring the giant component
  capital_social
 new-habitability habitability  ; change to globals, to perform behavior space
+A-state B-state C-state D-state E-state
 ]
 to setup ;to establish framework and agents
   ca
